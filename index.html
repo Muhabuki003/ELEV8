@@ -1,0 +1,2693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0A0807" />
+<title>Elev8 Barbershop — Katy / Houston, Texas | Precision Cuts. Elevated Style.</title>
+<meta name="description" content="Elev8 Barbershop in Katy/Houston — where precision meets style. Fresh fades, clean line-ups, beard work, and kids' cuts. Five elite barbers. Walk in or book online." />
+<meta property="og:title" content="Elev8 Barbershop — Katy / Houston, Texas" />
+<meta property="og:description" content="Where precision meets style. Walk-ins welcome, seven days a week." />
+<meta property="og:type" content="website" />
+
+<!-- Fonts: Bebas Neue (display, the barbershop signage font) + Playfair Display (editorial italic) + Outfit (body) + Space Mono (numerals/pricing) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- GSAP + ScrollTrigger + Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/SplitText.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+/* ============================================================
+   ELEV8 — DESIGN TOKENS
+   ============================================================ */
+:root {
+  --ink: #0A0807;
+  --ink-2: #14100E;
+  --ink-3: #1E1814;
+  --blood: #C8102E;
+  --blood-glow: #FF1F3D;
+  --cream: #F5EDE0;
+  --cream-2: #E8DCC9;
+  --brick: #6B3A2A;
+  --gold: #C9A961;
+  --bone: #2A201B;
+  --line: rgba(245, 237, 224, 0.08);
+  --line-strong: rgba(245, 237, 224, 0.18);
+
+  --font-display: 'Bebas Neue', 'Anton', 'Impact', sans-serif;
+  --font-editorial: 'Playfair Display', 'Times New Roman', serif;
+  --font-body: 'Outfit', system-ui, sans-serif;
+  --font-mono: 'Space Mono', 'JetBrains Mono', monospace;
+
+  --container: 1440px;
+  --gutter: clamp(20px, 4vw, 56px);
+
+  --ease-cinema: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+html, body {
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+body { min-height: 100dvh; }
+img, svg, canvas { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; cursor: pointer; background: none; border: none; color: inherit; }
+::selection { background: var(--blood); color: var(--cream); }
+
+/* ============================================================
+   GLOBAL ATMOSPHERE: grain + vignette
+   ============================================================ */
+.grain {
+  position: fixed; inset: 0; z-index: 9999;
+  pointer-events: none;
+  opacity: 0.08;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='5'/><feColorMatrix values='0 0 0 0 0.96 0 0 0 0 0.93 0 0 0 0 0.88 0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.vignette {
+  position: fixed; inset: 0; z-index: 9998;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.55) 100%);
+}
+
+/* ============================================================
+   CUSTOM CURSOR
+   ============================================================ */
+@media (hover: hover) and (pointer: fine) {
+  body { cursor: none; }
+  .cursor-dot, .cursor-ring {
+    position: fixed; top: 0; left: 0; pointer-events: none; z-index: 10000;
+    border-radius: 999px; transform: translate(-50%, -50%);
+    transition: width .25s var(--ease-cinema), height .25s var(--ease-cinema), background .25s, border-color .25s, opacity .25s;
+    will-change: transform;
+  }
+  .cursor-dot { width: 6px; height: 6px; background: var(--blood); }
+  .cursor-ring { width: 32px; height: 32px; border: 1px solid var(--cream); opacity: 0.6; }
+  body.cursor-hover .cursor-dot { opacity: 0; }
+  body.cursor-hover .cursor-ring { width: 56px; height: 56px; border-color: var(--blood); background: rgba(200, 16, 46, 0.08); }
+}
+
+/* ============================================================
+   TYPOGRAPHY PRIMITIVES
+   ============================================================ */
+.display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 0.86;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+.editorial-italic {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+}
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cream-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.eyebrow::before {
+  content: "";
+  width: 22px; height: 1px;
+  background: var(--blood);
+}
+.body-lg { font-size: clamp(16px, 1.1vw, 18px); line-height: 1.6; color: var(--cream-2); max-width: 60ch; }
+.mono { font-family: var(--font-mono); }
+
+/* ============================================================
+   LAYOUT PRIMITIVES
+   ============================================================ */
+.container { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 var(--gutter); }
+.section { position: relative; padding: clamp(80px, 12vh, 160px) 0; }
+
+/* ============================================================
+   NAV
+   ============================================================ */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 18px var(--gutter);
+  display: flex; align-items: center; justify-content: space-between;
+  transition: backdrop-filter .35s, background .35s, padding .35s;
+}
+.nav.scrolled {
+  background: rgba(10, 8, 7, 0.78);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-bottom: 1px solid var(--line);
+  padding: 12px var(--gutter);
+}
+.nav-logo {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  display: flex; align-items: center; gap: 10px;
+}
+.nav-logo .pole {
+  width: 14px; height: 22px;
+  background: repeating-linear-gradient(135deg, var(--blood) 0 4px, var(--cream) 4px 8px, var(--ink-3) 8px 12px);
+  border-radius: 2px;
+  box-shadow: 0 0 12px rgba(200, 16, 46, 0.4);
+  animation: poleSpin 1.6s linear infinite;
+}
+@keyframes poleSpin {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 -24px; }
+}
+.nav-links { display: flex; gap: 28px; align-items: center; }
+.nav-links a {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cream-2);
+  position: relative;
+  padding: 6px 0;
+}
+.nav-links a::after {
+  content: ""; position: absolute; left: 0; bottom: 0;
+  width: 0; height: 1px; background: var(--blood);
+  transition: width .4s var(--ease-cinema);
+}
+.nav-links a:hover { color: var(--cream); }
+.nav-links a:hover::after { width: 100%; }
+.nav-cta {
+  background: var(--blood);
+  color: var(--cream);
+  padding: 12px 22px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  transition: transform .25s var(--ease-cinema), background .25s;
+  box-shadow: 0 4px 24px rgba(200, 16, 46, 0.3);
+}
+.nav-cta:hover { transform: translateY(-1px); background: var(--blood-glow); }
+.nav-burger { display: none; flex-direction: column; gap: 5px; padding: 8px; }
+.nav-burger span { width: 24px; height: 1.5px; background: var(--cream); transition: transform .3s, opacity .3s; }
+
+@media (max-width: 860px) {
+  .nav-links { display: none; }
+  .nav-burger { display: flex; }
+  .nav-cta { padding: 10px 16px; font-size: 11px; }
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  align-items: end;
+  padding: 100px var(--gutter) 40px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 80% 60% at 70% 30%, rgba(200,16,46,0.18), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 20% 80%, rgba(107,58,42,0.20), transparent 70%),
+    var(--ink);
+}
+#three-canvas {
+  position: absolute; inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.hero-content {
+  position: relative;
+  z-index: 2;
+  grid-column: 1;
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 14px;
+  margin-bottom: 12px;
+}
+.hero-eyebrow .badge {
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--cream);
+  border: 1px solid var(--line-strong);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(245,237,224,0.04);
+  backdrop-filter: blur(8px);
+}
+.hero-eyebrow .badge .dot {
+  display: inline-block; width: 6px; height: 6px;
+  background: var(--blood); border-radius: 999px;
+  margin-right: 8px;
+  box-shadow: 0 0 10px var(--blood);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+.hero-title {
+  font-size: clamp(56px, 8vw, 130px);
+  margin-bottom: 14px;
+  position: relative;
+}
+.hero-title .row { display: block; overflow: hidden; }
+.hero-title .row:last-child { display: flex; align-items: center; gap: 0.18em; flex-wrap: wrap; overflow: visible; }
+.hero-title .word { display: inline-block; }
+.hero-title .italic-word {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+.hero-title .blood { color: var(--blood); }
+.hero-title .amp {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 0.5em;
+  text-transform: lowercase;
+  color: var(--cream-2);
+  letter-spacing: -0.02em;
+  margin: 0 0.15em;
+  vertical-align: 0.15em;
+}
+.hero-title .accent-line {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.07em;
+  background: var(--blood);
+  vertical-align: 0.18em;
+  margin-right: 0.18em;
+  box-shadow: 0 0 14px rgba(200,16,46,0.5);
+}
+.hero-sub {
+  font-size: clamp(16px, 1.2vw, 19px);
+  max-width: 46ch;
+  color: var(--cream-2);
+  margin-bottom: 18px;
+  line-height: 1.55;
+}
+.hero-sub em {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  color: var(--cream);
+}
+.hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+.btn {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 14px;
+  padding: 18px 28px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  transition: transform .35s var(--ease-cinema), background .35s, color .35s, border-color .35s;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--blood);
+  color: var(--cream);
+  box-shadow: 0 8px 32px rgba(200, 16, 46, 0.32), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.btn-primary:hover { background: var(--blood-glow); transform: translateY(-2px); }
+.btn-ghost {
+  background: transparent;
+  color: var(--cream);
+  border: 1px solid var(--line-strong);
+  backdrop-filter: blur(8px);
+}
+.btn-ghost:hover { border-color: var(--cream); transform: translateY(-2px); }
+.btn .arrow {
+  width: 16px; height: 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: transform .35s var(--ease-cinema);
+}
+.btn:hover .arrow { transform: translateX(4px); }
+.btn.magnetic { will-change: transform; }
+
+.hero-stats {
+  display: flex; gap: clamp(20px, 3vw, 48px);
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.hero-stats .stat {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.hero-stats .stat-value {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 3vw, 44px);
+  letter-spacing: 0.01em;
+  color: var(--cream);
+  line-height: 1;
+}
+.hero-stats .stat-value .small {
+  font-family: var(--font-mono);
+  font-size: 0.4em;
+  color: var(--blood);
+  margin-left: 6px;
+  vertical-align: 0.6em;
+}
+.hero-stats .stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cream-2);
+}
+
+.hero-visual-meta {
+  position: relative; z-index: 2;
+  grid-column: 2;
+  align-self: end;
+  display: flex; flex-direction: column; gap: 30px;
+  padding-bottom: 24px;
+}
+.hero-meta-card {
+  background: rgba(10, 8, 7, 0.55);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px 24px;
+  max-width: 320px;
+  margin-left: auto;
+}
+.hero-meta-card .label {
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--cream-2); margin-bottom: 10px;
+}
+.hero-meta-card .value {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--cream);
+}
+.hero-meta-card .value strong {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  display: block;
+  margin-top: 6px;
+  color: var(--blood);
+}
+.scroll-hint {
+  position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  z-index: 3;
+  color: var(--cream-2);
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+}
+.scroll-hint .line {
+  width: 1px; height: 36px; background: linear-gradient(to bottom, var(--blood), transparent);
+  position: relative; overflow: hidden;
+}
+.scroll-hint .line::before {
+  content: ""; position: absolute; top: -36px; left: 0; width: 100%; height: 36px;
+  background: var(--cream);
+  animation: scrollLine 2.4s ease-in-out infinite;
+}
+@keyframes scrollLine {
+  0% { top: -36px; }
+  100% { top: 36px; }
+}
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; padding-top: 110px; }
+  .hero-visual-meta { grid-column: 1; align-items: flex-start; }
+  .hero-meta-card { margin-left: 0; }
+  .scroll-hint { display: none; }
+}
+
+/* ============================================================
+   MARQUEE STRIP
+   ============================================================ */
+.marquee {
+  background: var(--cream);
+  color: var(--ink);
+  padding: 22px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  position: relative;
+}
+.marquee-track {
+  display: inline-flex;
+  gap: 60px;
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 64px);
+  letter-spacing: 0.02em;
+  animation: marqueeScroll 38s linear infinite;
+  padding-right: 60px;
+}
+.marquee-track .star {
+  color: var(--blood);
+  font-family: var(--font-display);
+  font-size: 0.7em;
+  align-self: center;
+}
+@keyframes marqueeScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee.alt { background: var(--ink); color: var(--cream); border-color: var(--blood); }
+.marquee.alt .marquee-track { animation-direction: reverse; }
+.marquee.alt .star { color: var(--blood); }
+
+/* ============================================================
+   STOREFRONT CINEMATIC
+   ============================================================ */
+.storefront {
+  position: relative;
+  padding: 0;
+  height: 90dvh;
+  min-height: 600px;
+  overflow: hidden;
+  display: flex; align-items: flex-end;
+}
+.storefront-img {
+  position: absolute; inset: 0;
+  background-size: cover;
+  background-position: center;
+  will-change: transform;
+}
+.storefront-img::after {
+  content: ""; position: absolute; inset: 0;
+  background:
+    linear-gradient(to top, rgba(10,8,7,0.95) 0%, rgba(10,8,7,0.4) 35%, rgba(10,8,7,0.1) 70%, rgba(10,8,7,0.7) 100%);
+}
+.storefront-content {
+  position: relative; z-index: 2;
+  width: 100%;
+  padding: var(--gutter);
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  align-items: end;
+  gap: 40px;
+}
+.storefront h2 {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 9vw, 140px);
+  line-height: 0.86;
+  letter-spacing: -0.01em;
+  margin-bottom: 0;
+}
+.storefront h2 .blood { color: var(--blood); }
+.storefront h2 .it {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 0.4em;
+  letter-spacing: -0.01em;
+  display: block;
+  color: var(--cream-2);
+  margin-top: 12px;
+  text-transform: none;
+}
+.storefront-meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--cream-2);
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  border-left: 1px solid var(--blood);
+  padding-left: 18px;
+}
+.storefront-meta strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--cream);
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+}
+@media (max-width: 760px) {
+  .storefront-content { grid-template-columns: 1fr; }
+  .storefront { height: 75dvh; min-height: 500px; }
+}
+
+/* ============================================================
+   ABOUT / ORIGIN
+   ============================================================ */
+.about { background: var(--ink); }
+.about-grid {
+  display: grid;
+  grid-template-columns: 0.4fr 0.6fr;
+  gap: clamp(40px, 8vw, 120px);
+  align-items: start;
+}
+.about-grid .col-meta { padding-top: 14px; }
+.about h2 {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 7vw, 110px);
+  line-height: 0.88;
+  letter-spacing: -0.005em;
+  margin-bottom: 32px;
+}
+.about h2 .it {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 0.62em;
+  font-weight: 400;
+  display: block;
+  color: var(--brick);
+  text-transform: none;
+  letter-spacing: -0.01em;
+}
+.about-pull {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: clamp(22px, 2.4vw, 34px);
+  line-height: 1.35;
+  color: var(--cream);
+  margin-bottom: 36px;
+  position: relative;
+  padding-left: 32px;
+}
+.about-pull::before {
+  content: "";
+  position: absolute; left: 0; top: 14px;
+  width: 18px; height: 1px;
+  background: var(--blood);
+}
+.about-body p { color: var(--cream-2); margin-bottom: 18px; max-width: 60ch; }
+.about-body p strong { color: var(--cream); font-weight: 600; }
+.about-meta-list {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 22px;
+  border-top: 1px solid var(--line);
+  padding-top: 28px;
+  margin-top: 28px;
+}
+.about-meta-list li {
+  display: flex; gap: 16px; align-items: baseline;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 22px;
+}
+.about-meta-list .num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--blood);
+  letter-spacing: 0.1em;
+  min-width: 32px;
+}
+.about-meta-list .label {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  color: var(--cream);
+  display: block;
+  margin-bottom: 4px;
+}
+.about-meta-list .desc {
+  font-size: 14px;
+  color: var(--cream-2);
+  line-height: 1.5;
+}
+@media (max-width: 860px) {
+  .about-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   SERVICES (BENTO ASYMMETRIC)
+   ============================================================ */
+.services {
+  background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
+  position: relative;
+}
+.section-head {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: end;
+  margin-bottom: 56px;
+}
+.section-head h2 {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 7vw, 110px);
+  line-height: 0.86;
+  letter-spacing: -0.005em;
+}
+.section-head h2 .it {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 0.5em;
+  display: block;
+  color: var(--blood);
+  text-transform: none;
+}
+.section-head .head-meta {
+  color: var(--cream-2);
+  font-size: 15px;
+  line-height: 1.55;
+  max-width: 50ch;
+  justify-self: end;
+}
+@media (max-width: 760px) {
+  .section-head { grid-template-columns: 1fr; }
+  .section-head .head-meta { justify-self: start; }
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: minmax(180px, auto);
+  gap: 14px;
+}
+.svc {
+  position: relative;
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 28px;
+  overflow: hidden;
+  display: flex; flex-direction: column; justify-content: space-between;
+  min-height: 220px;
+  transition: transform .5s var(--ease-cinema), border-color .5s;
+}
+.svc:hover { transform: translateY(-3px); border-color: var(--line-strong); }
+.svc::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 0%), rgba(200,16,46,0.15), transparent 60%);
+  opacity: 0; transition: opacity .5s;
+  pointer-events: none;
+}
+.svc:hover::before { opacity: 1; }
+.svc .svc-num {
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 0.18em;
+  color: var(--blood);
+}
+.svc .svc-name {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 2.6vw, 44px);
+  line-height: 0.95;
+  letter-spacing: 0.005em;
+  color: var(--cream);
+  margin-top: 14px;
+}
+.svc .svc-desc {
+  font-size: 14px;
+  color: var(--cream-2);
+  line-height: 1.5;
+  margin-top: 10px;
+  max-width: 36ch;
+}
+.svc .svc-foot {
+  display: flex; justify-content: space-between; align-items: end;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.svc .svc-price {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--cream);
+  letter-spacing: 0.04em;
+}
+.svc .svc-price .from { color: var(--cream-2); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; display: block; }
+.svc .svc-time {
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 0.1em;
+  color: var(--cream-2);
+}
+.svc.feat { background: var(--blood); color: var(--cream); border-color: var(--blood); }
+.svc.feat .svc-num,
+.svc.feat .svc-time,
+.svc.feat .svc-price .from { color: rgba(245,237,224,0.7); }
+.svc.feat .svc-desc { color: rgba(245,237,224,0.85); }
+.svc.feat .svc-foot { border-color: rgba(245,237,224,0.2); }
+.svc.feat .svc-name { font-size: clamp(36px, 4vw, 64px); }
+.svc.feat::before { display: none; }
+.svc-icon {
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 12px;
+  background: rgba(245,237,224,0.06);
+  border: 1px solid var(--line);
+  color: var(--cream);
+}
+.svc-icon svg { width: 22px; height: 22px; }
+.svc.feat .svc-icon { background: rgba(245,237,224,0.15); border-color: rgba(245,237,224,0.25); }
+
+/* layout sizes */
+.svc.s1 { grid-column: span 7; grid-row: span 2; }
+.svc.s2 { grid-column: span 5; }
+.svc.s3 { grid-column: span 5; }
+.svc.s4 { grid-column: span 4; }
+.svc.s5 { grid-column: span 4; }
+.svc.s6 { grid-column: span 4; }
+.svc.s7 { grid-column: span 6; }
+.svc.s8 { grid-column: span 6; }
+@media (max-width: 1000px) {
+  .svc.s1, .svc.s2, .svc.s3, .svc.s4, .svc.s5, .svc.s6, .svc.s7, .svc.s8 { grid-column: span 6; }
+  .svc.s1 { grid-row: span 1; }
+}
+@media (max-width: 600px) {
+  .svc.s1, .svc.s2, .svc.s3, .svc.s4, .svc.s5, .svc.s6, .svc.s7, .svc.s8 { grid-column: span 12; }
+}
+
+/* ============================================================
+   BARBERS
+   ============================================================ */
+.barbers { background: var(--ink-2); position: relative; }
+.barbers-track {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 18px;
+}
+.barber {
+  background: var(--ink-3);
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  display: flex; flex-direction: column;
+  transition: transform .5s var(--ease-cinema);
+}
+.barber:hover { transform: translateY(-4px); }
+.barber-img {
+  aspect-ratio: 4/5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bone);
+  position: relative;
+  overflow: hidden;
+}
+.barber-img::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(10,8,7,0.7), transparent 50%);
+}
+.barber-img .tag {
+  position: absolute; top: 14px; left: 14px;
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+  background: var(--blood);
+  color: var(--cream);
+  padding: 5px 10px;
+  border-radius: 999px;
+  z-index: 2;
+}
+.barber-body { padding: 22px; }
+.barber-name {
+  font-family: var(--font-display);
+  font-size: 30px;
+  letter-spacing: 0.01em;
+  margin-bottom: 6px;
+  color: var(--cream);
+}
+.barber-role {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--blood);
+  margin-bottom: 14px;
+}
+.barber-spec {
+  font-size: 13px;
+  color: var(--cream-2);
+  line-height: 1.5;
+}
+@media (max-width: 1200px) {
+  .barbers-track { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 760px) {
+  .barbers-track { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .barbers-track { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   BOOKING
+   ============================================================ */
+.booking {
+  background:
+    radial-gradient(circle at 20% 30%, rgba(200,16,46,0.18), transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(107,58,42,0.15), transparent 50%),
+    var(--ink);
+  position: relative;
+}
+.booking-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
+}
+.booking h2 {
+  font-family: var(--font-display);
+  font-size: clamp(56px, 9vw, 150px);
+  line-height: 0.84;
+  margin-bottom: 28px;
+}
+.booking h2 .it {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 0.45em;
+  display: block;
+  color: var(--cream-2);
+  text-transform: none;
+  margin-top: 8px;
+  letter-spacing: -0.01em;
+}
+.booking p { color: var(--cream-2); font-size: 16px; line-height: 1.6; max-width: 50ch; margin-bottom: 32px; }
+.booking-card {
+  background: var(--ink-3);
+  border: 1px solid var(--line-strong);
+  border-radius: 26px;
+  padding: 36px;
+  position: relative;
+  overflow: hidden;
+}
+.booking-card::before {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at top right, rgba(200,16,46,0.14), transparent 50%);
+  pointer-events: none;
+}
+.booking-card .label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--blood);
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.booking-card .label .live-dot {
+  width: 7px; height: 7px; border-radius: 999px; background: var(--blood);
+  box-shadow: 0 0 10px var(--blood);
+  animation: pulse 1.6s infinite;
+}
+.booking-card h3 {
+  font-family: var(--font-display);
+  font-size: 36px;
+  line-height: 0.95;
+  margin-bottom: 18px;
+}
+.booking-card .booking-list {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 14px;
+  margin: 18px 0 28px;
+}
+.booking-card .booking-list li {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 14px;
+  color: var(--cream-2);
+}
+.booking-card .booking-list li svg {
+  flex-shrink: 0;
+  color: var(--blood);
+}
+.booking-card .booking-list li strong { color: var(--cream); font-weight: 500; }
+.booking-card .micro {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--cream-2);
+  margin-top: 14px;
+  text-align: center;
+  text-transform: uppercase;
+}
+.booksy-slot {
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--cream-2);
+  text-align: center;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+@media (max-width: 900px) {
+  .booking-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   GALLERY
+   ============================================================ */
+.gallery { background: var(--ink); }
+.gallery-masonry {
+  columns: 4;
+  column-gap: 14px;
+}
+@media (max-width: 1100px) { .gallery-masonry { columns: 3; } }
+@media (max-width: 760px) { .gallery-masonry { columns: 2; } }
+@media (max-width: 460px) { .gallery-masonry { columns: 1; } }
+
+.gallery-item {
+  break-inside: avoid;
+  margin-bottom: 14px;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  background: var(--ink-3);
+  cursor: pointer;
+  transition: transform .6s var(--ease-cinema);
+  will-change: transform;
+}
+.gallery-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform .8s var(--ease-cinema), filter .6s;
+  filter: brightness(0.92) contrast(1.05);
+}
+.gallery-item:hover img { transform: scale(1.04); filter: brightness(1) contrast(1.08); }
+.gallery-item::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(10,8,7,0.6), transparent 50%);
+  opacity: 0; transition: opacity .5s;
+  pointer-events: none;
+}
+.gallery-item:hover::after { opacity: 1; }
+
+/* placeholder gallery items (when images haven't loaded) */
+.gallery-item.fallback {
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--cream-2);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--line);
+}
+.gallery-item.fallback.tall { aspect-ratio: 3/4; }
+.gallery-item.fallback.square { aspect-ratio: 1; }
+.gallery-item.fallback.wide { aspect-ratio: 4/3; }
+
+/* ============================================================
+   COMMUNITY / LITERACY
+   ============================================================ */
+.community {
+  background:
+    linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
+  position: relative;
+  overflow: hidden;
+}
+.community::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 80% 30%, rgba(201,169,97,0.10), transparent 50%);
+  pointer-events: none;
+}
+.community-grid {
+  display: grid;
+  grid-template-columns: 0.55fr 0.45fr;
+  gap: clamp(40px, 6vw, 96px);
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+.community-img-wrap {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  aspect-ratio: 4/5;
+  background-size: cover;
+  background-position: center;
+}
+.community-img-wrap::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to top right, rgba(10,8,7,0.5), transparent 60%);
+}
+.community-img-wrap .badge-overlay {
+  position: absolute; bottom: 22px; left: 22px;
+  background: rgba(10,8,7,0.7);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  padding: 14px 18px;
+  z-index: 2;
+}
+.community-img-wrap .badge-overlay .label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.community-img-wrap .badge-overlay .name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--cream);
+  letter-spacing: 0.01em;
+}
+.community .pull {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: clamp(28px, 3.6vw, 52px);
+  line-height: 1.2;
+  color: var(--cream);
+  margin-bottom: 32px;
+}
+.community .pull .blood { color: var(--blood); font-style: italic; }
+.community h2 {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 5.5vw, 80px);
+  line-height: 0.92;
+  margin-bottom: 28px;
+}
+.community p {
+  color: var(--cream-2);
+  font-size: 15px;
+  line-height: 1.65;
+  margin-bottom: 18px;
+  max-width: 56ch;
+}
+.community-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 36px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+}
+.community-stats .v {
+  font-family: var(--font-display);
+  font-size: 36px;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.community-stats .l {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cream-2);
+}
+@media (max-width: 900px) {
+  .community-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   REVIEWS
+   ============================================================ */
+.reviews { background: var(--ink); }
+.reviews-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 18px;
+}
+.review {
+  background: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 30px;
+  display: flex; flex-direction: column; gap: 18px;
+  position: relative;
+  transition: border-color .5s, transform .5s var(--ease-cinema);
+}
+.review:nth-child(2) { transform: translateY(28px); }
+.review:hover { border-color: var(--line-strong); }
+.review .stars { display: flex; gap: 4px; color: var(--gold); }
+.review .stars svg { width: 16px; height: 16px; }
+.review p {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--cream);
+  flex: 1;
+}
+.review .meta {
+  display: flex; align-items: center; gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.review .avatar {
+  width: 44px; height: 44px; border-radius: 999px;
+  background: var(--blood);
+  color: var(--cream);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+.review .who { font-size: 14px; color: var(--cream); font-weight: 500; }
+.review .when { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; color: var(--cream-2); margin-top: 3px; text-transform: uppercase; }
+@media (max-width: 1000px) {
+  .reviews-grid { grid-template-columns: 1fr; }
+  .review:nth-child(2) { transform: translateY(0); }
+}
+
+/* ============================================================
+   FAQ
+   ============================================================ */
+.faq { background: var(--ink-2); }
+.faq-grid {
+  display: grid;
+  grid-template-columns: 0.4fr 0.6fr;
+  gap: clamp(40px, 6vw, 100px);
+  align-items: start;
+}
+.faq-list {
+  display: flex; flex-direction: column;
+}
+.faq-item {
+  border-top: 1px solid var(--line);
+}
+.faq-item:last-child { border-bottom: 1px solid var(--line); }
+.faq-q {
+  width: 100%;
+  text-align: left;
+  padding: 28px 0;
+  display: flex; justify-content: space-between; align-items: center; gap: 24px;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2vw, 30px);
+  letter-spacing: 0.01em;
+  color: var(--cream);
+  transition: color .35s;
+}
+.faq-q:hover { color: var(--blood); }
+.faq-q .plus {
+  width: 22px; height: 22px;
+  position: relative; flex-shrink: 0;
+}
+.faq-q .plus::before, .faq-q .plus::after {
+  content: ""; position: absolute; top: 50%; left: 0;
+  width: 100%; height: 1.5px; background: var(--cream);
+  transition: transform .4s var(--ease-cinema);
+}
+.faq-q .plus::after { transform: rotate(90deg); }
+.faq-item.open .faq-q .plus::after { transform: rotate(0); }
+.faq-item.open .faq-q { color: var(--blood); }
+.faq-a {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .55s var(--ease-cinema);
+}
+.faq-a-inner {
+  padding: 0 0 30px 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--cream-2);
+  max-width: 60ch;
+}
+@media (max-width: 860px) {
+  .faq-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   LOCATION & HOURS
+   ============================================================ */
+.location { background: var(--ink); }
+.location-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  overflow: hidden;
+}
+.location-info {
+  padding: clamp(32px, 5vw, 56px);
+  background: var(--ink-3);
+  display: flex; flex-direction: column; gap: 28px;
+}
+.location-info h3 {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4vw, 56px);
+  line-height: 0.95;
+  margin-bottom: 8px;
+}
+.location-info h3 .it {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 0.5em;
+  display: block;
+  color: var(--blood);
+  text-transform: none;
+  margin-top: 6px;
+}
+.address { font-family: var(--font-editorial); font-style: italic; font-size: 18px; color: var(--cream); line-height: 1.5; }
+.address .num { font-family: var(--font-mono); font-style: normal; color: var(--blood); margin-right: 10px; font-size: 14px; }
+
+.hours-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.hours-table tr {
+  border-bottom: 1px solid var(--line);
+}
+.hours-table tr:last-child { border-bottom: none; }
+.hours-table td {
+  padding: 12px 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.hours-table td:first-child {
+  text-transform: uppercase;
+  color: var(--cream-2);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+}
+.hours-table td:last-child { text-align: right; color: var(--cream); }
+.hours-table tr.today td { color: var(--blood); }
+.hours-table tr.today td:first-child::before {
+  content: "● ";
+  color: var(--blood);
+}
+
+.location-map {
+  position: relative;
+  background: var(--ink-2);
+  min-height: 480px;
+  display: flex; align-items: center; justify-content: center;
+}
+.map-placeholder {
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(45deg, var(--ink-3) 0 1px, transparent 1px 16px),
+    repeating-linear-gradient(-45deg, var(--ink-3) 0 1px, transparent 1px 16px),
+    var(--ink-2);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 14px;
+  color: var(--cream-2);
+}
+.map-placeholder .pin {
+  width: 22px; height: 22px;
+  background: var(--blood);
+  border-radius: 999px;
+  position: relative;
+  box-shadow: 0 0 24px var(--blood);
+  animation: pulse 1.8s infinite;
+}
+.map-placeholder .pin::after {
+  content: ""; position: absolute;
+  top: 100%; left: 50%; transform: translateX(-50%);
+  border-left: 8px solid transparent; border-right: 8px solid transparent;
+  border-top: 14px solid var(--blood);
+}
+.map-placeholder .label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 900px) {
+  .location-grid { grid-template-columns: 1fr; }
+  .location-map { min-height: 320px; }
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.footer {
+  background: var(--ink-2);
+  border-top: 1px solid var(--line);
+  padding: 80px var(--gutter) 32px;
+}
+.footer-top {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 40px;
+  padding-bottom: 60px;
+  border-bottom: 1px solid var(--line);
+}
+.footer-brand {
+  font-family: var(--font-display);
+  font-size: clamp(56px, 9vw, 140px);
+  line-height: 0.86;
+  margin-bottom: 22px;
+}
+.footer-brand .it {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 0.32em;
+  display: block;
+  color: var(--blood);
+  text-transform: none;
+  letter-spacing: -0.01em;
+  margin-top: 8px;
+}
+.footer-tagline {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  color: var(--cream-2);
+  font-size: 15px;
+  max-width: 36ch;
+  line-height: 1.5;
+}
+.footer-col h4 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--blood);
+  margin-bottom: 18px;
+}
+.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.footer-col a {
+  font-size: 14px;
+  color: var(--cream-2);
+  transition: color .25s;
+}
+.footer-col a:hover { color: var(--cream); }
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center; gap: 20px;
+  padding-top: 32px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--cream-2);
+}
+.footer-bottom .credit a { color: var(--blood); }
+.footer-bottom .credit a:hover { color: var(--blood-glow); }
+@media (max-width: 800px) {
+  .footer-top { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .footer-top { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   MOBILE STICKY BOOK
+   ============================================================ */
+.mobile-book {
+  display: none;
+  position: fixed; bottom: 16px; left: 16px; right: 16px;
+  z-index: 90;
+  background: var(--blood);
+  color: var(--cream);
+  padding: 16px;
+  border-radius: 999px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  box-shadow: 0 12px 32px rgba(200,16,46,0.4);
+}
+@media (max-width: 760px) {
+  .mobile-book { display: block; }
+  .footer { padding-bottom: 100px; }
+}
+
+/* ============================================================
+   ANIMATION HELPERS
+   ============================================================ */
+.reveal { opacity: 0; transform: translateY(40px); }
+.reveal.is-in { opacity: 1; transform: translateY(0); transition: opacity .9s var(--ease-cinema), transform .9s var(--ease-cinema); }
+
+.split-line { overflow: hidden; display: block; }
+.split-line .word { display: inline-block; transform: translateY(110%); }
+
+/* mobile menu overlay */
+.mobile-menu {
+  position: fixed; inset: 0; z-index: 95;
+  background: var(--ink);
+  display: none;
+  flex-direction: column;
+  padding: 100px var(--gutter) 40px;
+  gap: 20px;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu a {
+  font-family: var(--font-display);
+  font-size: 38px;
+  letter-spacing: 0.02em;
+  color: var(--cream);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 14px;
+}
+.mobile-menu a:hover { color: var(--blood); }
+
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="vignette"></div>
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<!-- ============================================================
+     NAV
+     ============================================================ -->
+<header class="nav" id="nav">
+  <a href="#top" class="nav-logo">
+    <span class="pole"></span>
+    <span>ELEV8</span>
+  </a>
+  <nav class="nav-links">
+    <a href="#about">About</a>
+    <a href="#services">Services</a>
+    <a href="#barbers">Barbers</a>
+    <a href="#gallery">Gallery</a>
+    <a href="#community">Community</a>
+    <a href="#location">Location</a>
+  </nav>
+  <a href="#booking" class="nav-cta">Book Now</a>
+  <button class="nav-burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+</header>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#about">About</a>
+  <a href="#services">Services</a>
+  <a href="#barbers">Barbers</a>
+  <a href="#gallery">Gallery</a>
+  <a href="#community">Community</a>
+  <a href="#location">Location</a>
+  <a href="#booking" style="color: var(--blood);">Book Online →</a>
+</div>
+
+<!-- ============================================================
+     HERO
+     ============================================================ -->
+<section class="hero" id="top">
+  <canvas id="three-canvas"></canvas>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      <span class="badge"><span class="dot"></span>OPEN TODAY · WALK-INS WELCOME</span>
+    </div>
+
+    <h1 class="hero-title display">
+      <span class="row"><span class="word">Elev8</span></span>
+      <span class="row"><span class="word blood">Your</span></span>
+      <span class="row">
+        <span class="accent-line"></span>
+        <span class="word italic-word">Look</span>
+        <span class="amp">&amp;</span>
+        <span class="word">Confidence.</span>
+      </span>
+    </h1>
+
+    <p class="hero-sub">Where <em>precision meets style</em> — every cut designed to elevate your look. Located in Katy / Houston. Walk in or book your barber online.</p>
+
+    <div class="hero-ctas">
+      <a href="#booking" class="btn btn-primary magnetic">
+        Book Online
+        <span class="arrow">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 8h12m-4-4 4 4-4 4"/></svg>
+        </span>
+      </a>
+      <a href="#services" class="btn btn-ghost magnetic">
+        Services <span class="mono" style="opacity:0.6">$25+</span>
+      </a>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-value">7<span class="small">DAYS</span></div>
+        <div class="stat-label">Open a week</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">4.8<span class="small">/5</span></div>
+        <div class="stat-label">Google rating</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">3<span class="small">MIN</span></div>
+        <div class="stat-label">Katy / Houston</div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="hero-visual-meta">
+    <div class="hero-meta-card">
+      <div class="label">Katy / Houston, TX · Est. 2024</div>
+      <div class="value">
+        Precision meets style.
+        <strong>Your look, our craft.</strong>
+      </div>
+    </div>
+  </aside>
+
+  <div class="scroll-hint">
+    <span>SCROLL</span>
+    <span class="line"></span>
+  </div>
+</section>
+
+<!-- ============================================================
+     MARQUEE 1
+     ============================================================ -->
+<div class="marquee">
+  <div class="marquee-track">
+    <span>FADES</span><span class="star">✦</span>
+    <span>LINE-UPS</span><span class="star">✦</span>
+    <span>BEARDS</span><span class="star">✦</span>
+    <span>TAPERS</span><span class="star">✦</span>
+    <span>KIDS' CUTS</span><span class="star">✦</span>
+    <span>WALK-INS</span><span class="star">✦</span>
+    <span>SEVEN DAYS</span><span class="star">✦</span>
+    <span>KATY / HOUSTON</span><span class="star">✦</span>
+    <!-- duplicate for seamless loop -->
+    <span>FADES</span><span class="star">✦</span>
+    <span>LINE-UPS</span><span class="star">✦</span>
+    <span>BEARDS</span><span class="star">✦</span>
+    <span>TAPERS</span><span class="star">✦</span>
+    <span>KIDS' CUTS</span><span class="star">✦</span>
+    <span>WALK-INS</span><span class="star">✦</span>
+    <span>SEVEN DAYS</span><span class="star">✦</span>
+    <span>KATY / HOUSTON</span><span class="star">✦</span>
+  </div>
+</div>
+
+<!-- ============================================================
+     STOREFRONT CINEMATIC
+     ============================================================ -->
+<section class="storefront">
+  <div class="storefront-img" id="storefrontBg" style="background-image: url('EXTERIOR.JPG')"></div>
+  <div class="storefront-content">
+    <h2 class="display">
+      Park up.<br>
+      <span class="blood">Walk in.</span>
+      <span class="it">— or book ahead. Either way, you're getting handled right.</span>
+    </h2>
+    <div class="storefront-meta">
+      <strong>ELEV8 BARBERSHOP</strong>
+      Katy / Houston, TX<br>
+      <span style="color: var(--blood)">●</span> Open today
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     ABOUT
+     ============================================================ -->
+<section class="section about" id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div class="col-meta">
+        <span class="eyebrow">01 · ORIGIN</span>
+        <h2 class="display">
+          Katy's New<br>
+          <span class="it">— standard in grooming.</span>
+        </h2>
+      </div>
+
+      <div class="about-body">
+        <p class="about-pull">"We don't just cut hair. We cut the kind of fades that make a Tuesday feel like a fresh start, and we built a library in the lobby because reading still matters."</p>
+
+        <p>What began as a vision to elevate the barbershop experience has quickly grown into a trusted destination for those who expect quality, consistency, and a laid-back vibe. Whether you're looking for a fresh fade, beard grooming, or a complete transformation — our crew has you covered.</p>
+
+        <p>We work on every grade and grain — kids in for their first sit-down, dads needing a clean line before church, women coming in for a shape-up, regulars walking through the door without saying a word because we already know.</p>
+
+        <ul class="about-meta-list">
+          <li>
+            <span class="num">/01</span>
+            <div>
+              <span class="label">Walk-ins, all day.</span>
+              <span class="desc">No appointment? Pull up. We'll find a chair.</span>
+            </div>
+          </li>
+          <li>
+            <span class="num">/02</span>
+            <div>
+              <span class="label">Opened 2024.</span>
+              <span class="desc">Katy's newest destination for quality, consistency, and a laid-back vibe.</span>
+            </div>
+          </li>
+          <li>
+            <span class="num">/03</span>
+            <div>
+              <span class="label">Your look, our craft.</span>
+              <span class="desc">High-quality products, sharp fades, clean lines — confident results, every time.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     MARQUEE 2 (alt)
+     ============================================================ -->
+<div class="marquee alt">
+  <div class="marquee-track">
+    <span>ELEVATED CUTS.</span><span class="star">✦</span>
+    <span>REAL COMMUNITY.</span><span class="star">✦</span>
+    <span>ELEVATED CUTS.</span><span class="star">✦</span>
+    <span>REAL COMMUNITY.</span><span class="star">✦</span>
+    <span>ELEVATED CUTS.</span><span class="star">✦</span>
+    <span>REAL COMMUNITY.</span><span class="star">✦</span>
+    <span>ELEVATED CUTS.</span><span class="star">✦</span>
+    <span>REAL COMMUNITY.</span><span class="star">✦</span>
+  </div>
+</div>
+
+<!-- ============================================================
+     SERVICES (BENTO)
+     ============================================================ -->
+<section class="section services" id="services">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="display">
+        02 · The menu.<br>
+        <span class="it">priced fair, cut sharp.</span>
+      </h2>
+      <p class="head-meta">No hidden surprises. Add a beard line-up to any cut. Kids 10 and under always pay less. All cash and card welcome.</p>
+    </div>
+
+    <div class="services-grid">
+
+      <article class="svc s1 feat">
+        <div>
+          <span class="svc-num">01 / SIGNATURE</span>
+          <h3 class="svc-name">The Elev8<br>Cut.</h3>
+          <p class="svc-desc">Consultation, shampoo, full clipper-and-shears cut, hot-towel neck shave, and a clean line-up. The reason people drive in from across Houston.</p>
+        </div>
+        <div class="svc-foot">
+          <div class="svc-price">
+            <span class="from">From</span>$45
+          </div>
+          <span class="svc-time">~ 45 MIN</span>
+        </div>
+      </article>
+
+      <article class="svc s2">
+        <div class="svc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 5l14 14M5 19L19 5M9 9a2 2 0 11-4 0 2 2 0 014 0zM19 9a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        </div>
+        <div>
+          <span class="svc-num">02 / DAILY</span>
+          <h3 class="svc-name">Fade &amp; Line-Up</h3>
+          <p class="svc-desc">Skin, taper, low, mid, high — pick your fade, get a fresh edge.</p>
+        </div>
+        <div class="svc-foot">
+          <div class="svc-price"><span class="from">From</span>$30</div>
+          <span class="svc-time">~ 30 MIN</span>
+        </div>
+      </article>
+
+      <article class="svc s3">
+        <div class="svc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7h18M3 12h18M5 17l3-3 3 3 3-3 3 3 3-3"/></svg>
+        </div>
+        <div>
+          <span class="svc-num">03 / GROOMING</span>
+          <h3 class="svc-name">Beard &amp; Edge</h3>
+          <p class="svc-desc">Shape, line, hot towel, oil. The full beard treatment.</p>
+        </div>
+        <div class="svc-foot">
+          <div class="svc-price"><span class="from">From</span>$22</div>
+          <span class="svc-time">~ 25 MIN</span>
+        </div>
+      </article>
+
+      <article class="svc s4">
+        <div class="svc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="9" r="4"/><path d="M5 21c.5-4 3.5-6 7-6s6.5 2 7 6"/></svg>
+        </div>
+        <div>
+          <span class="svc-num">04 / KIDS</span>
+          <h3 class="svc-name">Kids' Cut</h3>
+          <p class="svc-desc">10 and under. First-cut Polaroid is on us.</p>
+        </div>
+        <div class="svc-foot">
+          <div class="svc-price"><span class="from">From</span>$25</div>
+          <span class="svc-time">~ 25 MIN</span>
+        </div>
+      </article>
+
+      <article class="svc s5">
+        <div class="svc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12c0-5 4-9 9-9s9 4 9 9-4 9-9 9c-2.5 0-4.5-1-6-2.5"/><path d="M3 12l3 3M3 12l3-3"/></svg>
+        </div>
+        <div>
+          <span class="svc-num">05 / TOUCH-UP</span>
+          <h3 class="svc-name">Line-Up Only</h3>
+          <p class="svc-desc">Mid-week edge between cuts. In, out, sharp.</p>
+        </div>
+        <div class="svc-foot">
+          <div class="svc-price"><span class="from">From</span>$15</div>
+          <span class="svc-time">~ 15 MIN</span>
+        </div>
+      </article>
+
+      <article class="svc s6">
+        <div class="svc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div>
+          <span class="svc-num">06 / OG</span>
+          <h3 class="svc-name">Senior Cut</h3>
+          <p class="svc-desc">62 and up. Same care, sharper price.</p>
+        </div>
+        <div class="svc-foot">
+          <div class="svc-price"><span class="from">From</span>$22</div>
+          <span class="svc-time">~ 25 MIN</span>
+        </div>
+      </article>
+
+      <article class="svc s7">
+        <div class="svc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18l6-12 3 6 3-3 6 9H3z"/></svg>
+        </div>
+        <div>
+          <span class="svc-num">07 / EVENT</span>
+          <h3 class="svc-name">Wedding &amp; Game-Day Group Cuts</h3>
+          <p class="svc-desc">Party of 4 or more — book the back room. Groomsmen, teams, photo days. Reserve a chair block, we'll handle the timing.</p>
+        </div>
+        <div class="svc-foot">
+          <div class="svc-price"><span class="from">From</span>$160 / 4</div>
+          <span class="svc-time">CALL AHEAD</span>
+        </div>
+      </article>
+
+      <article class="svc s8">
+        <div class="svc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M5 19l3-3M16 8l3-3"/></svg>
+        </div>
+        <div>
+          <span class="svc-num">08 / WOMEN'S</span>
+          <h3 class="svc-name">Style &amp; Shape</h3>
+          <p class="svc-desc">Curly cuts, fades, tapers, edge work, scissor shaping. We cut every grade and grain — yes, that includes you.</p>
+        </div>
+        <div class="svc-foot">
+          <div class="svc-price"><span class="from">From</span>$40</div>
+          <span class="svc-time">~ 50 MIN</span>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     BARBERS
+     ============================================================ -->
+<section class="section barbers" id="barbers">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="display">
+        03 · The chairs.<br>
+        <span class="it">meet the people behind the clippers.</span>
+      </h2>
+      <p class="head-meta">Each barber is passionate about their craft. Pick your stylist, book direct on their page — or walk in and take whichever chair is open.</p>
+    </div>
+
+    <div class="barbers-track">
+      <article class="barber">
+        <div class="barber-img" style="background-image: url('robert.webp')">
+          <span class="tag">★ TOP CHAIR</span>
+        </div>
+        <div class="barber-body">
+          <div class="barber-name">Robert</div>
+          <div class="barber-role">Master Barber</div>
+          <p class="barber-spec">Precision skin fades, sharp line-ups, and beard sculpting. The chair people book weeks in advance.</p>
+          <a href="https://roberto-reyes.square.site/" target="_blank" rel="noopener" class="btn btn-ghost" style="margin-top:14px;font-size:11px;padding:10px 18px;">Book Robert ↗</a>
+        </div>
+      </article>
+
+      <article class="barber">
+        <div class="barber-img" style="background-image: url('anthony.webp')">
+        </div>
+        <div class="barber-body">
+          <div class="barber-name">Anthony</div>
+          <div class="barber-role">Senior Barber · Blendz</div>
+          <p class="barber-spec">Flawless blends and seamless fades. Anthony makes the transition look effortless every time.</p>
+          <a href="https://antblndzbarbershophouston.com/" target="_blank" rel="noopener" class="btn btn-ghost" style="margin-top:14px;font-size:11px;padding:10px 18px;">Book Anthony ↗</a>
+        </div>
+      </article>
+
+      <article class="barber">
+        <div class="barber-img" style="background-image: url('edras.webp')">
+        </div>
+        <div class="barber-body">
+          <div class="barber-name">Edras</div>
+          <div class="barber-role">Senior Barber · King Cuts</div>
+          <p class="barber-spec">Crisp tapers, clean edges, and the kind of cuts that command a room. Every cut a king-level finish.</p>
+          <a href="https://kingcuts-107199.square.site/" target="_blank" rel="noopener" class="btn btn-ghost" style="margin-top:14px;font-size:11px;padding:10px 18px;">Book Edras ↗</a>
+        </div>
+      </article>
+
+      <article class="barber">
+        <div class="barber-img" style="background-image: url('diego.webp')">
+        </div>
+        <div class="barber-body">
+          <div class="barber-name">Diego</div>
+          <div class="barber-role">Barber · Drz Blendz</div>
+          <p class="barber-spec">Low fades, mid fades, skin fades — Diego's blending game is surgical. Known for detail work that holds up all week.</p>
+          <a href="https://drzblendz.square.site/" target="_blank" rel="noopener" class="btn btn-ghost" style="margin-top:14px;font-size:11px;padding:10px 18px;">Book Diego ↗</a>
+        </div>
+      </article>
+
+      <article class="barber">
+        <div class="barber-img" style="background-image: url('jason.webp')">
+        </div>
+        <div class="barber-body">
+          <div class="barber-name">Jason</div>
+          <div class="barber-role">Barber · Yeiky Blenz</div>
+          <p class="barber-spec">Fast hands, clean lines, and consistent results. The chair walk-ins love and regulars never leave.</p>
+          <a href="https://yeikyblenz.square.site/" target="_blank" rel="noopener" class="btn btn-ghost" style="margin-top:14px;font-size:11px;padding:10px 18px;">Book Jason ↗</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     BOOKING
+     ============================================================ -->
+<section class="section booking" id="booking">
+  <div class="container">
+    <div class="booking-grid">
+      <div>
+        <span class="eyebrow">04 · BOOK A CHAIR</span>
+        <h2 class="display">
+          Walk in.
+          <br>
+          <span style="color: var(--blood)">Or skip the wait.</span>
+          <span class="it">— book online in under a minute.</span>
+        </h2>
+        <p>Pick your barber, pick your service, pick your slot. Each barber has their own booking page on Square — all you do is show up fresh.</p>
+
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
+          <a href="https://roberto-reyes.square.site/" target="_blank" rel="noopener" class="btn btn-primary magnetic">Book Robert ↗</a>
+          <a href="https://antblndzbarbershophouston.com/" target="_blank" rel="noopener" class="btn btn-ghost magnetic">Book Anthony ↗</a>
+          <a href="https://kingcuts-107199.square.site/" target="_blank" rel="noopener" class="btn btn-ghost magnetic">Book Edras ↗</a>
+          <a href="https://drzblendz.square.site/" target="_blank" rel="noopener" class="btn btn-ghost magnetic">Book Diego ↗</a>
+          <a href="https://yeikyblenz.square.site/" target="_blank" rel="noopener" class="btn btn-ghost magnetic">Book Jason ↗</a>
+        </div>
+      </div>
+
+      <div class="booking-card">
+        <div class="label"><span class="live-dot"></span>ELEV8 · 5 BARBERS READY</div>
+        <h3 class="display">Pick Your Chair</h3>
+        <ul class="booking-list">
+          <li>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 13l4 4L19 7"/></svg>
+            <span><strong>Walk-ins welcome</strong> daily — no appointment needed</span>
+          </li>
+          <li>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>
+            <span>Book online via each barber's <strong>Square page</strong></span>
+          </li>
+          <li>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
+            <span>Open <strong>7 days a week</strong> — come through anytime</span>
+          </li>
+          <li>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+            <span><strong>4.8 / 5</strong> across Google reviews</span>
+          </li>
+        </ul>
+
+        <div class="booksy-slot">
+          → Five barbers, five booking links — see the Barbers section above
+        </div>
+        <div class="micro">All payments secure · Cash and card accepted</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     GALLERY
+     ============================================================ -->
+<section class="section gallery" id="gallery">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="display">
+        05 · The work.<br>
+        <span class="it">cut, lined, and out the door.</span>
+      </h2>
+      <p class="head-meta">Tagged from the chair. Real clients, real cuts. Want yours up here? Tag us <span style="color:var(--cream)">@elev8barbershop</span> — we'll feature you.</p>
+    </div>
+
+    <div class="gallery-masonry" id="galleryMasonry">
+      <a class="gallery-item" href="gallery1.jpg"><img src="gallery1.jpg" alt="Cut 1" loading="lazy" onerror="this.parentElement.classList.add('fallback','tall'); this.remove();"></a>
+      <a class="gallery-item" href="gallery2.jpg"><img src="gallery2.jpg" alt="Cut 2" loading="lazy" onerror="this.parentElement.classList.add('fallback','square'); this.remove();"></a>
+      <a class="gallery-item" href="gallery3.jpg"><img src="gallery3.jpg" alt="Cut 3" loading="lazy" onerror="this.parentElement.classList.add('fallback','wide'); this.remove();"></a>
+      <a class="gallery-item" href="gallery4.jpg"><img src="gallery4.jpg" alt="Cut 4" loading="lazy" onerror="this.parentElement.classList.add('fallback','tall'); this.remove();"></a>
+      <a class="gallery-item" href="gallery5.jpg"><img src="gallery5.jpg" alt="Cut 5" loading="lazy" onerror="this.parentElement.classList.add('fallback','square'); this.remove();"></a>
+      <a class="gallery-item" href="gallery6.jpg"><img src="gallery6.jpg" alt="Cut 6" loading="lazy" onerror="this.parentElement.classList.add('fallback','tall'); this.remove();"></a>
+      <a class="gallery-item" href="gallery7.jpg"><img src="gallery7.jpg" alt="Cut 7" loading="lazy" onerror="this.parentElement.classList.add('fallback','wide'); this.remove();"></a>
+      <a class="gallery-item" href="gallery8.jpg"><img src="gallery8.jpg" alt="Cut 8" loading="lazy" onerror="this.parentElement.classList.add('fallback','square'); this.remove();"></a>
+      <a class="gallery-item" href="gallery9.jpg"><img src="gallery9.jpg" alt="Cut 9" loading="lazy" onerror="this.parentElement.classList.add('fallback','tall'); this.remove();"></a>
+      <a class="gallery-item" href="gallery10.jpg"><img src="gallery10.jpg" alt="Cut 10" loading="lazy" onerror="this.parentElement.classList.add('fallback','wide'); this.remove();"></a>
+      <a class="gallery-item" href="gallery11.jpg"><img src="gallery11.jpg" alt="Cut 11" loading="lazy" onerror="this.parentElement.classList.add('fallback','square'); this.remove();"></a>
+      <a class="gallery-item" href="gallery12.jpg"><img src="gallery12.jpg" alt="Cut 12" loading="lazy" onerror="this.parentElement.classList.add('fallback','tall'); this.remove();"></a>
+      <a class="gallery-item" href="gallery13.jpg"><img src="gallery13.jpg" alt="Cut 13" loading="lazy" onerror="this.parentElement.classList.add('fallback','wide'); this.remove();"></a>
+      <a class="gallery-item" href="gallery14.jpg"><img src="gallery14.jpg" alt="Cut 14" loading="lazy" onerror="this.parentElement.classList.add('fallback','square'); this.remove();"></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     COMMUNITY / LITERACY
+     ============================================================ -->
+<section class="section community" id="community">
+  <div class="container">
+    <div class="community-grid">
+      <div class="community-img-wrap" style="background-image: url('INTERIOR.JPG')">
+        <div class="badge-overlay">
+          <div class="label">Inside Elev8</div>
+          <div class="name">The shop floor</div>
+        </div>
+      </div>
+
+      <div>
+        <span class="eyebrow">06 · THE SHOP</span>
+        <h2 class="display">
+          The Elev8<br>
+          <span style="color: var(--gold)">Experience.</span>
+        </h2>
+        <p class="pull">"Walk in. Sit down. Walk out <span class="blood">elevated</span>."</p>
+        <p>The shop offers a welcoming, laid-back atmosphere where clients can relax, unwind, and leave with confidence. Join the growing number of satisfied clients who trust Elev8 Barbershop for top-tier grooming.</p>
+        <p>We take pride in the details — from using high-quality products to delivering sharp fades and consistent results. Come in as a stranger, leave as a regular.</p>
+
+        <div class="community-stats">
+          <div>
+            <div class="v">5</div>
+            <div class="l">Elite barbers</div>
+          </div>
+          <div>
+            <div class="v">7</div>
+            <div class="l">Days a week open</div>
+          </div>
+          <div>
+            <div class="v">4.8</div>
+            <div class="l">Google rating</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     REVIEWS
+     ============================================================ -->
+<section class="section reviews">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="display">
+        07 · The chairs talk.<br>
+        <span class="it">but our regulars talk louder.</span>
+      </h2>
+      <p class="head-meta">Pulled from Google and the people who keep coming back. 4.8 / 5 across 312+ reviews.</p>
+    </div>
+
+    <div class="reviews-grid">
+      <article class="review">
+        <div class="stars">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+        </div>
+        <p>"Robert has been cutting my hair for years. I moved across town and still make the drive. That's how good it is at Elev8."</p>
+        <div class="meta">
+          <div class="avatar">DA</div>
+          <div>
+            <div class="who">Devon A.</div>
+            <div class="when">Google · 3 weeks ago</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="review">
+        <div class="stars">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+        </div>
+        <p>"Took my son for his first cut at Elev8 and the barber was so patient and skilled. He cried less than I did. Real ones at this shop."</p>
+        <div class="meta">
+          <div class="avatar">RC</div>
+          <div>
+            <div class="who">Rosalind C.</div>
+            <div class="when">Google · 2 months ago</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="review">
+        <div class="stars">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+        </div>
+        <p>"Diego's blending is like nobody else in Katy / Houston. My fade held up all week. This shop operates on a different level — Elev8 is no joke."</p>
+        <div class="meta">
+          <div class="avatar">TM</div>
+          <div>
+            <div class="who">Tasha M.</div>
+            <div class="when">Google · 6 weeks ago</div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FAQ
+     ============================================================ -->
+<section class="section faq">
+  <div class="container">
+    <div class="faq-grid">
+      <div>
+        <span class="eyebrow">08 · QUESTIONS</span>
+        <h2 class="display">
+          The basics.<br>
+          <span class="it">— before you head over.</span>
+        </h2>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-q">Do you take walk-ins?<span class="plus"></span></button>
+          <div class="faq-a"><div class="faq-a-inner">Always. We hold open chairs every day for walk-ins. If your barber is booked, we'll put you with someone open. Average wait stays around 18 minutes.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">How do I book online?<span class="plus"></span></button>
+          <div class="faq-a"><div class="faq-a-inner">Each barber has their own booking link on Square. Head to the Barbers section, click your barber's booking link, pick a service and slot. No app required — works in any browser.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Are kids welcome?<span class="plus"></span></button>
+          <div class="faq-a"><div class="faq-a-inner">Yes — and 10-and-under always pay less. We've got barbers who work fast and gentle with kids. First-cut Polaroid is on us.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Do you cut women's hair?<span class="plus"></span></button>
+          <div class="faq-a"><div class="faq-a-inner">Absolutely. Curly cuts, fades, tapers, edge work, scissor shaping. Our barbers are trained on every texture and grain — every chair is open to everyone.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">What about a wedding or game-day group?<span class="plus"></span></button>
+          <div class="faq-a"><div class="faq-a-inner">Reserve a chair block of 4+ ahead of time and we'll handle the timing. Groomsmen, sports teams, photo days — call ahead at least 48 hours out so we can hold the chairs.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">Cash or card?<span class="plus"></span></button>
+          <div class="faq-a"><div class="faq-a-inner">Both. We take Visa, MC, Amex, Discover, Apple Pay, and cash. Tips in cash or via Square — whatever's easiest for you.</div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q">What's your cancellation policy?<span class="plus"></span></button>
+          <div class="faq-a"><div class="faq-a-inner">Cancel any Square appointment up to 2 hours before with no charge. Late cancels and no-shows after that may incur a small fee — your barber's time is real money. Reschedule with one tap, we get it.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     LOCATION
+     ============================================================ -->
+<section class="section location" id="location">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="display">
+        09 · Come through.<br>
+        <span class="it">katy / houston.</span>
+      </h2>
+      <p class="head-meta">Elev8 Barbershop — Katy / Houston area. Lot parking out front. Walk in or book your barber online.</p>
+    </div>
+
+    <div class="location-grid">
+      <div class="location-info">
+        <div>
+          <h3 class="display">ELEV8 BARBERSHOP<span class="it">— katy / houston, tx</span></h3>
+          <p class="address"><span class="num">↗</span>Katy / Houston, TX</p>
+        </div>
+
+        <div>
+          <span class="eyebrow" style="margin-bottom: 14px; display: flex;">HOURS</span>
+          <table class="hours-table">
+            <tr><td>Mon</td><td>9:00 — 7:00</td></tr>
+            <tr><td>Tue</td><td>9:00 — 7:00</td></tr>
+            <tr class="today"><td>Wed</td><td>9:00 — 8:00</td></tr>
+            <tr><td>Thu</td><td>9:00 — 8:00</td></tr>
+            <tr><td>Fri</td><td>9:00 — 9:00</td></tr>
+            <tr><td>Sat</td><td>8:00 — 8:00</td></tr>
+            <tr><td>Sun</td><td>11:00 — 5:00</td></tr>
+          </table>
+        </div>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <a href="https://maps.google.com/?q=Elev8+Barbershop+Katy+TX" target="_blank" rel="noopener" class="btn btn-primary magnetic">
+            Get directions
+            <span class="arrow">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 8h12m-4-4 4 4-4 4"/></svg>
+            </span>
+          </a>
+          <a href="tel:+12814000000" class="btn btn-ghost magnetic">Call shop</a>
+        </div>
+      </div>
+
+      <div class="location-map">
+        <div class="map-placeholder">
+          <div class="pin"></div>
+          <div class="label">KATY / HOUSTON, TX</div>
+          <div style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; color: var(--cream-2); opacity: 0.5;">→ swap with embedded google map iframe</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer class="footer" id="contact">
+  <div class="footer-top">
+    <div>
+      <div class="footer-brand display">
+        Elev8<br>
+        Barbershop.
+        <span class="it">— elevated cuts. real community.</span>
+      </div>
+      <p class="footer-tagline">Katy / Houston's premier barbershop. Walk in or book your barber online — five elite chairs ready for you.</p>
+    </div>
+
+    <div class="footer-col">
+      <h4>Visit</h4>
+      <ul>
+        <li><a href="#location">Katy / Houston, TX</a></li>
+        <li><a href="tel:+12814000000">(281) 400 · 0000</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Site</h4>
+      <ul>
+        <li><a href="#about">About</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#barbers">Barbers</a></li>
+        <li><a href="#gallery">Gallery</a></li>
+        <li><a href="#community">Community</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Follow</h4>
+      <ul>
+        <li><a href="https://instagram.com/elev8barbershop" target="_blank" rel="noopener">Instagram ↗</a></li>
+        <li><a href="https://google.com" target="_blank" rel="noopener">Google ↗</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <div>© ELEV8 BARBERSHOP · KATY / HOUSTON, TX</div>
+    <div class="credit">SITE BY <a href="https://bookistudios.com" target="_blank" rel="noopener">BOOKISTUDIO ↗</a></div>
+  </div>
+</footer>
+
+<a href="#booking" class="mobile-book">Book Online</a>
+
+
+<!-- ============================================================
+     JAVASCRIPT — Three.js scene + GSAP timelines + interactions
+     ============================================================ -->
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+// =========================================================
+// CUSTOM CURSOR
+// =========================================================
+(() => {
+  if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  const dot = document.querySelector('.cursor-dot');
+  const ring = document.querySelector('.cursor-ring');
+  let mx = window.innerWidth/2, my = window.innerHeight/2;
+  let rx = mx, ry = my;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  function loop() {
+    rx += (mx - rx) * 0.18;
+    ry += (my - ry) * 0.18;
+    dot.style.transform = `translate(${mx}px, ${my}px) translate(-50%,-50%)`;
+    ring.style.transform = `translate(${rx}px, ${ry}px) translate(-50%,-50%)`;
+    requestAnimationFrame(loop);
+  }
+  loop();
+  document.querySelectorAll('a, button, .svc, .barber, .gallery-item, .review').forEach(el => {
+    el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+    el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+  });
+})();
+
+// =========================================================
+// NAV SCROLLED STATE + MOBILE MENU
+// =========================================================
+(() => {
+  const nav = document.getElementById('nav');
+  const burger = document.getElementById('burger');
+  const menu = document.getElementById('mobileMenu');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 80) nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  });
+  burger.addEventListener('click', () => menu.classList.toggle('open'));
+  menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => menu.classList.remove('open')));
+})();
+
+// =========================================================
+// MAGNETIC BUTTONS
+// =========================================================
+(() => {
+  if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  document.querySelectorAll('.magnetic').forEach(btn => {
+    btn.addEventListener('mousemove', e => {
+      const r = btn.getBoundingClientRect();
+      const x = e.clientX - r.left - r.width/2;
+      const y = e.clientY - r.top - r.height/2;
+      gsap.to(btn, { x: x*0.25, y: y*0.4, duration: 0.4, ease: 'power3.out' });
+    });
+    btn.addEventListener('mouseleave', () => {
+      gsap.to(btn, { x: 0, y: 0, duration: 0.6, ease: 'elastic.out(1,0.4)' });
+    });
+  });
+})();
+
+// =========================================================
+// SERVICE CARD SPOTLIGHT
+// =========================================================
+(() => {
+  document.querySelectorAll('.svc').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const r = card.getBoundingClientRect();
+      const mx = ((e.clientX - r.left) / r.width) * 100;
+      const my = ((e.clientY - r.top) / r.height) * 100;
+      card.style.setProperty('--mx', mx + '%');
+      card.style.setProperty('--my', my + '%');
+    });
+  });
+})();
+
+// =========================================================
+// FAQ ACCORDION
+// =========================================================
+(() => {
+  document.querySelectorAll('.faq-item').forEach(item => {
+    const q = item.querySelector('.faq-q');
+    const a = item.querySelector('.faq-a');
+    q.addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+      // close others
+      document.querySelectorAll('.faq-item.open').forEach(o => {
+        o.classList.remove('open');
+        o.querySelector('.faq-a').style.maxHeight = 0;
+      });
+      if (!isOpen) {
+        item.classList.add('open');
+        a.style.maxHeight = a.scrollHeight + 'px';
+      }
+    });
+  });
+})();
+
+// =========================================================
+// HERO TIMELINE — STAGGERED REVEAL
+// =========================================================
+(() => {
+  const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+  // wrap each character in hero title for stagger
+  document.querySelectorAll('.hero-title .word').forEach(w => {
+    const text = w.textContent;
+    w.innerHTML = text.split('').map(c =>
+      c === ' ' ? '&nbsp;' : `<span class="char" style="display:inline-block; transform:translateY(120%);">${c}</span>`
+    ).join('');
+  });
+
+  tl.from('.nav', { y: -30, opacity: 0, duration: 0.9 })
+    .from('.hero-eyebrow', { y: 20, opacity: 0, duration: 0.7 }, '-=0.4')
+    .to('.hero-title .char', { y: 0, duration: 1.0, stagger: 0.022, ease: 'expo.out' }, '-=0.3')
+    .from('.hero-sub', { y: 20, opacity: 0, duration: 0.8 }, '-=0.7')
+    .from('.hero-ctas .btn', { y: 20, opacity: 0, duration: 0.6, stagger: 0.1 }, '-=0.5')
+    .from('.hero-stats .stat', { y: 20, opacity: 0, duration: 0.6, stagger: 0.08 }, '-=0.4')
+    .from('.hero-meta-card', { x: 30, opacity: 0, duration: 0.8 }, '-=0.7')
+    .from('.scroll-hint', { opacity: 0, duration: 0.6 }, '-=0.3');
+})();
+
+// =========================================================
+// SCROLL-TRIGGERED SECTION REVEALS
+// =========================================================
+(() => {
+  // section heads with split-line headlines
+  document.querySelectorAll('.section-head h2, .about h2, .booking h2, .community h2, .footer .footer-brand').forEach(h => {
+    gsap.from(h, {
+      scrollTrigger: { trigger: h, start: 'top 85%' },
+      y: 50, opacity: 0, duration: 1.0, ease: 'power3.out'
+    });
+  });
+
+  // service cards stagger
+  gsap.from('.services-grid .svc', {
+    scrollTrigger: { trigger: '.services-grid', start: 'top 80%' },
+    y: 50, opacity: 0, scale: 0.96,
+    duration: 0.8, stagger: 0.07, ease: 'power3.out'
+  });
+
+  // barber cards stagger
+  gsap.from('.barbers-track .barber', {
+    scrollTrigger: { trigger: '.barbers-track', start: 'top 80%' },
+    y: 60, opacity: 0,
+    duration: 0.8, stagger: 0.1, ease: 'power3.out'
+  });
+
+  // gallery items stagger
+  gsap.from('.gallery-masonry .gallery-item', {
+    scrollTrigger: { trigger: '.gallery-masonry', start: 'top 80%' },
+    y: 40, opacity: 0,
+    duration: 0.8, stagger: 0.04, ease: 'power3.out'
+  });
+
+  // about list items
+  gsap.from('.about-meta-list li', {
+    scrollTrigger: { trigger: '.about-meta-list', start: 'top 85%' },
+    x: -30, opacity: 0,
+    duration: 0.7, stagger: 0.12, ease: 'power3.out'
+  });
+
+  // reviews stagger
+  gsap.from('.reviews-grid .review', {
+    scrollTrigger: { trigger: '.reviews-grid', start: 'top 80%' },
+    y: 40, opacity: 0,
+    duration: 0.8, stagger: 0.1, ease: 'power3.out'
+  });
+
+  // faq items
+  gsap.from('.faq-item', {
+    scrollTrigger: { trigger: '.faq-list', start: 'top 85%' },
+    y: 20, opacity: 0,
+    duration: 0.5, stagger: 0.06, ease: 'power2.out'
+  });
+
+  // storefront parallax
+  gsap.to('#storefrontBg', {
+    scrollTrigger: {
+      trigger: '.storefront',
+      start: 'top bottom',
+      end: 'bottom top',
+      scrub: 1
+    },
+    y: '-20%',
+    scale: 1.15
+  });
+
+  // booking card float
+  gsap.from('.booking-card', {
+    scrollTrigger: { trigger: '.booking-grid', start: 'top 75%' },
+    y: 60, opacity: 0,
+    duration: 1, ease: 'power3.out'
+  });
+
+  // community image scale
+  gsap.from('.community-img-wrap', {
+    scrollTrigger: { trigger: '.community-grid', start: 'top 80%' },
+    scale: 0.9, opacity: 0,
+    duration: 1, ease: 'power3.out'
+  });
+
+  // location info
+  gsap.from('.location-info > *', {
+    scrollTrigger: { trigger: '.location-grid', start: 'top 75%' },
+    y: 30, opacity: 0,
+    duration: 0.8, stagger: 0.12, ease: 'power3.out'
+  });
+})();
+
+// =========================================================
+// THREE.JS HERO SCENE
+// — barber pole, floating razor/scissors/comb, particles
+// — scroll-driven camera dolly via ScrollTrigger
+// =========================================================
+(() => {
+  const canvas = document.getElementById('three-canvas');
+  if (!canvas || typeof THREE === 'undefined') return;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0A0807, 0.05);
+
+  const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 100);
+  camera.position.set(0, 1.2, 7);
+  camera.lookAt(0, 0.5, 0);
+
+  // ===== LIGHTS =====
+  const ambient = new THREE.AmbientLight(0xfff1e0, 0.18);
+  scene.add(ambient);
+
+  const keyLight = new THREE.SpotLight(0xfff0d4, 1.6, 30, Math.PI/4, 0.6);
+  keyLight.position.set(3, 8, 4);
+  keyLight.target.position.set(0, 0, 0);
+  scene.add(keyLight); scene.add(keyLight.target);
+
+  const rimLight = new THREE.PointLight(0xC8102E, 2.5, 18, 1.2);
+  rimLight.position.set(-4, 1, -2);
+  scene.add(rimLight);
+
+  const warmFill = new THREE.PointLight(0xC9A961, 0.6, 20, 1.2);
+  warmFill.position.set(5, 0, 5);
+  scene.add(warmFill);
+
+  // ===== BARBER POLE (centerpiece) =====
+  const poleGroup = new THREE.Group();
+  poleGroup.position.set(2.5, 0.2, -1);
+
+  // pole body — stripe shader-ish via canvas texture
+  const stripeCanvas = document.createElement('canvas');
+  stripeCanvas.width = 64; stripeCanvas.height = 256;
+  const sctx = stripeCanvas.getContext('2d');
+  // diagonal red/white/blue helix bands
+  sctx.fillStyle = '#F5EDE0'; sctx.fillRect(0,0,64,256);
+  sctx.fillStyle = '#C8102E';
+  for (let i = -260; i < 260; i += 32) {
+    sctx.beginPath();
+    sctx.moveTo(0, i); sctx.lineTo(64, i + 64);
+    sctx.lineTo(64, i + 80); sctx.lineTo(0, i + 16);
+    sctx.closePath(); sctx.fill();
+  }
+  sctx.fillStyle = '#1f3a8a';
+  for (let i = -260; i < 260; i += 32) {
+    sctx.beginPath();
+    sctx.moveTo(0, i + 16); sctx.lineTo(64, i + 80);
+    sctx.lineTo(64, i + 96); sctx.lineTo(0, i + 32);
+    sctx.closePath(); sctx.fill();
+  }
+  const stripeTex = new THREE.CanvasTexture(stripeCanvas);
+  stripeTex.wrapS = THREE.RepeatWrapping;
+  stripeTex.wrapT = THREE.RepeatWrapping;
+  stripeTex.repeat.set(1, 2);
+
+  const poleBody = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.32, 0.32, 2.6, 32),
+    new THREE.MeshStandardMaterial({ map: stripeTex, roughness: 0.45, metalness: 0.2 })
+  );
+  poleGroup.add(poleBody);
+
+  // chrome caps
+  const capMat = new THREE.MeshStandardMaterial({ color: 0xc8c8c8, roughness: 0.18, metalness: 0.95 });
+  const topCap = new THREE.Mesh(new THREE.SphereGeometry(0.36, 24, 16), capMat);
+  topCap.position.y = 1.45;
+  const bottomCap = topCap.clone();
+  bottomCap.position.y = -1.45;
+  const topCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.18, 24), capMat);
+  topCyl.position.y = 1.32;
+  const botCyl = topCyl.clone();
+  botCyl.position.y = -1.32;
+  poleGroup.add(topCap, bottomCap, topCyl, botCyl);
+
+  scene.add(poleGroup);
+
+  // ===== STRAIGHT RAZOR =====
+  const razorGroup = new THREE.Group();
+  razorGroup.position.set(-2.6, 0.4, 0.5);
+  razorGroup.rotation.set(-0.2, 0.5, -0.4);
+
+  const bladeMat = new THREE.MeshStandardMaterial({ color: 0xe8e8e8, roughness: 0.12, metalness: 0.95 });
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.18, 0.018), bladeMat);
+  blade.position.x = 0.3;
+  razorGroup.add(blade);
+
+  const handleMat = new THREE.MeshStandardMaterial({ color: 0x14100E, roughness: 0.35, metalness: 0.6 });
+  const handle = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.14, 0.05), handleMat);
+  handle.position.x = -0.5;
+  razorGroup.add(handle);
+
+  // pivot
+  const pivotMat = new THREE.MeshStandardMaterial({ color: 0xC9A961, roughness: 0.2, metalness: 0.95 });
+  const pivot = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 12), pivotMat);
+  razorGroup.add(pivot);
+
+  scene.add(razorGroup);
+
+  // ===== SCISSORS =====
+  const scissorsGroup = new THREE.Group();
+  scissorsGroup.position.set(-1.5, -1.0, 1.6);
+  scissorsGroup.rotation.set(0.6, 0.4, 0.5);
+
+  function makeScissorBlade(angle) {
+    const bGroup = new THREE.Group();
+    const bGeo = new THREE.BoxGeometry(1.1, 0.06, 0.02);
+    const bMat = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.18, metalness: 0.92 });
+    const b = new THREE.Mesh(bGeo, bMat);
+    b.position.x = 0.4;
+    bGroup.add(b);
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.1, 0.022, 12, 24),
+      bMat
+    );
+    ring.position.set(-0.3, 0, 0);
+    ring.rotation.y = Math.PI/2;
+    bGroup.add(ring);
+    bGroup.rotation.z = angle;
+    return bGroup;
+  }
+  const sb1 = makeScissorBlade(0.06);
+  const sb2 = makeScissorBlade(-0.06);
+  scissorsGroup.add(sb1, sb2);
+  scene.add(scissorsGroup);
+
+  // ===== COMB =====
+  const combGroup = new THREE.Group();
+  combGroup.position.set(2.0, -1.2, 1.8);
+  combGroup.rotation.set(0.3, -0.3, 0.4);
+
+  const combMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.35, metalness: 0.4 });
+  const combBody = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.18, 0.04), combMat);
+  combGroup.add(combBody);
+  // teeth
+  for (let i = 0; i < 18; i++) {
+    const t = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.32, 0.04), combMat);
+    t.position.set(-0.45 + i * 0.053, -0.22, 0);
+    combGroup.add(t);
+  }
+  scene.add(combGroup);
+
+  // ===== FLOOR (subtle reflection) =====
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: 0x14100E, roughness: 0.7, metalness: 0.2,
+    transparent: true, opacity: 0.6
+  });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), floorMat);
+  floor.rotation.x = -Math.PI/2;
+  floor.position.y = -2.2;
+  scene.add(floor);
+
+  // ===== GOLD DUST PARTICLES =====
+  const particleCount = 90;
+  const particleGeo = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+  const speeds = new Float32Array(particleCount);
+  for (let i = 0; i < particleCount; i++) {
+    positions[i*3+0] = (Math.random() - 0.5) * 16;
+    positions[i*3+1] = (Math.random() - 0.5) * 8;
+    positions[i*3+2] = (Math.random() - 0.5) * 8;
+    speeds[i] = 0.0025 + Math.random() * 0.005;
+  }
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const particleMat = new THREE.PointsMaterial({
+    color: 0xC9A961,
+    size: 0.045,
+    transparent: true,
+    opacity: 0.85,
+    sizeAttenuation: true
+  });
+  const particles = new THREE.Points(particleGeo, particleMat);
+  scene.add(particles);
+
+  // ===== ANIMATION LOOP =====
+  let scrollT = 0;
+  ScrollTrigger.create({
+    trigger: '.hero',
+    start: 'top top',
+    end: 'bottom top',
+    onUpdate: (s) => { scrollT = s.progress; }
+  });
+
+  const clock = new THREE.Clock();
+
+  function animate() {
+    const t = clock.getElapsedTime();
+
+    // pole spin (the texture is mapped, rotate the whole mesh slowly + scroll the texture)
+    poleBody.rotation.y = t * 0.6;
+    stripeTex.offset.y = -t * 0.4;
+
+    // floating motions
+    razorGroup.position.y = 0.4 + Math.sin(t * 0.7) * 0.18;
+    razorGroup.rotation.z = -0.4 + Math.sin(t * 0.5) * 0.06;
+    razorGroup.rotation.y = 0.5 + Math.cos(t * 0.4) * 0.1;
+
+    scissorsGroup.position.y = -1.0 + Math.sin(t * 0.9 + 1.0) * 0.2;
+    scissorsGroup.rotation.z = 0.5 + Math.sin(t * 0.6) * 0.08;
+    sb1.rotation.z = 0.06 + Math.sin(t * 1.4) * 0.02;
+    sb2.rotation.z = -0.06 - Math.sin(t * 1.4) * 0.02;
+
+    combGroup.position.y = -1.2 + Math.cos(t * 0.65) * 0.2;
+    combGroup.rotation.x = 0.3 + Math.sin(t * 0.5) * 0.08;
+
+    // particle drift
+    const pos = particleGeo.attributes.position.array;
+    for (let i = 0; i < particleCount; i++) {
+      pos[i*3+1] += speeds[i];
+      pos[i*3+0] += Math.sin(t * 0.4 + i) * 0.0008;
+      if (pos[i*3+1] > 4) pos[i*3+1] = -4;
+    }
+    particleGeo.attributes.position.needsUpdate = true;
+
+    // SCROLL-DRIVEN CAMERA DOLLY
+    // as user scrolls hero, camera pulls back, tilts, and orbits slightly
+    const tg = scrollT;
+    camera.position.x = Math.sin(tg * 1.2) * 1.5;
+    camera.position.y = 1.2 + tg * 0.6;
+    camera.position.z = 7 + tg * 4.2;
+    camera.lookAt(0, 0.5 - tg * 0.3, 0);
+
+    // rim light pulses with scroll
+    rimLight.intensity = 2.5 + Math.sin(t * 2) * 0.4;
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+
+// =========================================================
+// REDUCE MOTION RESPECT
+// =========================================================
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  gsap.globalTimeline.timeScale(0.001);
+}
+
+</script>
+</body>
+</html>
