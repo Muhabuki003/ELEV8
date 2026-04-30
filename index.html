@@ -2137,7 +2137,7 @@ button { font: inherit; cursor: pointer; background: none; border: none; color: 
           <table class="hours-table">
             <tr><td>Mon</td><td>9:00 — 7:00</td></tr>
             <tr><td>Tue</td><td>9:00 — 7:00</td></tr>
-            <tr class="today"><td>Wed</td><td>9:00 — 8:00</td></tr>
+            <tr><td>Wed</td><td>9:00 — 8:00</td></tr>
             <tr><td>Thu</td><td>9:00 — 8:00</td></tr>
             <tr><td>Fri</td><td>9:00 — 9:00</td></tr>
             <tr><td>Sat</td><td>8:00 — 8:00</td></tr>
@@ -2222,6 +2222,16 @@ button { font: inherit; cursor: pointer; background: none; border: none; color: 
      JAVASCRIPT — Three.js scene + GSAP timelines + interactions
      ============================================================ -->
 <script>
+// Highlight today's row in the hours table using Houston (America/Chicago) time
+(() => {
+  const houstonDay = new Date().toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Chicago' });
+  document.querySelectorAll('.hours-table tr').forEach(row => {
+    if (row.querySelector('td') && row.querySelector('td').textContent.trim() === houstonDay) {
+      row.classList.add('today');
+    }
+  });
+})();
+
 gsap.registerPlugin(ScrollTrigger);
 
 // =========================================================
